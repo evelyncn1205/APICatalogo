@@ -8,61 +8,24 @@ namespace APICatalogo.Migrations
     public partial class PopulaProdutos : Migration
     {
         /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
+        protected override void Up(MigrationBuilder mb)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Produtos_Categoria_CategoriaID",
-                table: "Produtos");
+            
+            mb.Sql(@"INSERT INTO Produtos(Nome, Descricao, Preco, ImagemUrl, Estoque, DataRegisto, CategoriaID)
+                VALUES('Coca-Cola Diet', 'Refrigerante de Cola 350ml', 5.45, 'coca-cola.jpg', 50, NOW(), 1)");
+            mb.Sql(@"INSERT INTO Produtos(Nome, Descricao, Preco, ImagemUrl, Estoque, DataRegisto, CategoriaID)
+                VALUES('Lanche de Atum', 'Lanche de Atum com maionese', 8.50, 'atum.jpg', 10, NOW(), 2)");
 
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Categoria",
-                table: "Categoria");
+            mb.Sql(@"INSERT INTO Produtos(Nome, Descricao, Preco, ImagemUrl, Estoque, DataRegisto, CategoriaID)
+                VALUES('Pudim', 'Pudim de Leite Condensado 100g', 6.75, 'pudim.jpg', 20, NOW(), 3)");
 
-            migrationBuilder.RenameTable(
-                name: "Categoria",
-                newName: "Categorias");
 
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Categorias",
-                table: "Categorias",
-                column: "CategoriaID");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Produtos_Categorias_CategoriaID",
-                table: "Produtos",
-                column: "CategoriaID",
-                principalTable: "Categorias",
-                principalColumn: "CategoriaID",
-                onDelete: ReferentialAction.Cascade);
         }
 
         /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
+        protected override void Down(MigrationBuilder mb)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Produtos_Categorias_CategoriaID",
-                table: "Produtos");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Categorias",
-                table: "Categorias");
-
-            migrationBuilder.RenameTable(
-                name: "Categorias",
-                newName: "Categoria");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Categoria",
-                table: "Categoria",
-                column: "CategoriaID");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Produtos_Categoria_CategoriaID",
-                table: "Produtos",
-                column: "CategoriaID",
-                principalTable: "Categoria",
-                principalColumn: "CategoriaID",
-                onDelete: ReferentialAction.Cascade);
+            mb.Sql("Delete from Produtos");            
         }
     }
 }
