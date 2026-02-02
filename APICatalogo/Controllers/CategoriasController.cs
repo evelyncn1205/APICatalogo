@@ -1,33 +1,61 @@
 ﻿using APICatalogo.Context;
 using APICatalogo.Models;
+using APICatalogo.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace APICatalogo.Controllers
 {
-    [Route("[controller]")]
+    [Produces("aplicattion/json")]
+    [Route("api/[controller]")]
     [ApiController]
     public class CategoriasController : ControllerBase
     {
         private readonly AppDbContext _context;
-
-        public CategoriasController(AppDbContext context)
+        private readonly ILogger _logger;
+        public CategoriasController(AppDbContext context, ILogger<CategoriasController> logger)
         {
             _context = context;
+            _logger=logger;
+        }
+
+
+        [HttpGet("UsandoFromServices/{nome}")]
+        public ActionResult<string> GetSaudacaoFromService([FromServices] IMeuServico meuServico, string nome)
+        {
+            return meuServico.Saudacao(nome);
+        }
+
+
+        [HttpGet("SemUsarFromServices/{nome}")]
+        public ActionResult<string> GetSaudacaoSemFromService(IMeuServico meuServico, string nome)
+        {
+            return meuServico.Saudacao(nome);
         }
 
         [HttpGet("produtos")]
         public ActionResult<IEnumerable<Categoria>> GetCategoriasProdutos()
         {
+            _logger.LogInformation("==================GET api/categorias/produtos ===========");
             return _context.Categorias.Include(p => p.Produtos).ToList();
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Categoria>> Get()
+        public async Task<ActionResult<IEnumerable<Categoria>>> Get()
         {
+            try
+            {
+                _logger.LogInformation("==================GET api/categorias ===========");
+                return await _context.Categorias.AsNoTracking().ToListAsync();
+            }
+            catch (Exception)
+            {
 
-           return _context.Categorias.AsNoTracking().ToList();
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                     "Ocorreu um problema ao tratar a sua solicitação");
+            }
+           
         }
 
         [HttpGet("{id:int}", Name = "ObterCategoria")]
@@ -35,6 +63,7 @@ namespace APICatalogo.Controllers
         {
             try
             {
+                _logger.LogInformation($"==================GET api/categorias/id={id} ===========");
                 var categoria = _context.Categorias.FirstOrDefault(p => p.CategoriaID == id);
 
                 if (categoria == null)

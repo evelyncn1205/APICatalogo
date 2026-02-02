@@ -1,77 +1,71 @@
 ﻿using APICatalogo.Context;
 using APICatalogo.Models;
+using APICatalogo.Validations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace APICatalogo.Controllers
 {
-    [Route("[controller]")]
-    [ApiController]
+    [Table("Produtos")]
     public class ProdutosController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        public ProdutosController(AppDbContext context)
+        [Key]
+        public int ProdutoId { get; set; }
+
+        [Required(ErrorMessage = "O nome é obrigatório")]
+        [StringLength(80, ErrorMessage = "O nome deve ter no máximo {1} e no mínimo {2} caracteres",
+           MinimumLength = 5)]
+
+        [PrimeiraLetramaiuscula]
+        public string? Nome { get; set; }
+
+        [Required]
+        [StringLength(300)]
+        public string? Descricao { get; set; }
+
+        [Required]
+        [Range(1, 10000, ErrorMessage = "O preço deve estar entre {1} e {2}")]
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal Preco { get; set; }
+
+        [Required]
+        [StringLength(300, MinimumLength = 10)]
+        public string? ImagemUrl { get; set; }
+
+        public float Estoque { get; set; }
+        public DateTime DataCadastro { get; set; }
+        public int CategoriaId { get; set; }
+
+        [JsonIgnore]
+        public Categoria? Categoria { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            _context = context;
-        }
-        [HttpGet]
-        public ActionResult<IEnumerable<Produto>> Get()
-        {
-            var produtos = _context.Produtos.AsNoTracking().ToList();
-            if (produtos is null)
+            if (!string.IsNullOrEmpty(this.Nome))
             {
-                return NotFound();
-            }
-            return produtos;
-        }
-
-        [HttpGet("{id:int}", Name = "ObterProduto")]
-        public ActionResult<Produto> Get(int id)
-        {
-            var produto = _context.Produtos.FirstOrDefault(f => f.ProdutoId == id);
-            if (produto == null)
-            {
-                return NotFound("Produto não encontrado.");
-            }
-            return produto;
-        }
-
-        [HttpPost]
-        public IActionResult Post(Produto produto)
-        {
-            _context.Produtos.Add(produto);
-            _context.SaveChanges();
-
-            return CreatedAtRoute("ObterProduto", new { id = produto.ProdutoId }, produto);
-        }
-
-        [HttpPut("{id:int}")]
-        public ActionResult Put(int id, Produto produto)
-        {
-            if (id != produto.ProdutoId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(produto).State = EntityState.Modified;
-            _context.SaveChanges();
-
-            return Ok(produto);
-        }
-
-        [HttpDelete("{id:int}")]
-        public ActionResult Delete(int id)
-        {
-            var produto = _context.Produtos.FirstOrDefault(f=>f.ProdutoId==id);
-            if(produto == null)
-            {
-                return NotFound("Produto não localizado...");
+                var primeiraLetra = this.Nome[0].ToString();
+                if (primeiraLetra != primeiraLetra.ToUpper())
+                {
+                    yield return new
+                        ValidationResult("A primeira letra do produto deve ser maiúscula",
+                        new[]
+                        { nameof(this.Nome) }
+                        );
+                }
             }
 
-            _context.Produtos.Remove(produto);
-            _context.SaveChanges();
-            return Ok(produto);
+            if (this.Estoque <= 0)
+            {
+                yield return new
+                       ValidationResult("O estoque deve ser maior que zero",
+                       new[]
+                       { nameof(this.Estoque) }
+                       );
+            }
         }
     }
 }
