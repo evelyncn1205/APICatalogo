@@ -1,6 +1,7 @@
 using APICatalogo.Context;
 using APICatalogo.Filter;
 using APICatalogo.Logging;
+using APICatalogo.Repository;
 using APICatalogo.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -21,11 +22,23 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseMySql(mySQlCon
 
 builder.Services.AddTransient<IMeuServico, MeuServico>();
 builder.Services.AddScoped<ApiLoggerFilter>();
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepositpry>();
+builder.Services.AddScoped<IProdutoRepository, ProdutosRepository>();
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 builder.Logging.AddProvider(new CustomLoggerProvider(new CustomLoggerProviderConfiguration
 {
     LogLevel =LogLevel.Information
 }));
+
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add(typeof(ApiExceptionFilter));
+})
+.AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
 
 var app = builder.Build();
 

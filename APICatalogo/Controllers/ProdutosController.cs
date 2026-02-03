@@ -1,5 +1,6 @@
 ﻿using APICatalogo.Context;
 using APICatalogo.Models;
+using APICatalogo.Repository;
 using APICatalogo.Validations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,62 +11,93 @@ using System.Text.Json.Serialization;
 
 namespace APICatalogo.Controllers
 {
-    [Table("Produtos")]
+    [Route("[controller]")]
+    [ApiController]
     public class ProdutosController : ControllerBase
     {
-        [Key]
-        public int ProdutoId { get; set; }
+        private readonly IProdutoRepository _produtoRepository;
+        private readonly IRepository<Produto> _repository;
 
-        [Required(ErrorMessage = "O nome é obrigatório")]
-        [StringLength(80, ErrorMessage = "O nome deve ter no máximo {1} e no mínimo {2} caracteres",
-           MinimumLength = 5)]
 
-        [PrimeiraLetramaiuscula]
-        public string? Nome { get; set; }
-
-        [Required]
-        [StringLength(300)]
-        public string? Descricao { get; set; }
-
-        [Required]
-        [Range(1, 10000, ErrorMessage = "O preço deve estar entre {1} e {2}")]
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal Preco { get; set; }
-
-        [Required]
-        [StringLength(300, MinimumLength = 10)]
-        public string? ImagemUrl { get; set; }
-
-        public float Estoque { get; set; }
-        public DateTime DataCadastro { get; set; }
-        public int CategoriaId { get; set; }
-
-        [JsonIgnore]
-        public Categoria? Categoria { get; set; }
-
-        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        public ProdutosController(IRepository<Produto> repository,IProdutoRepository produtoRepository)
         {
-            if (!string.IsNullOrEmpty(this.Nome))
-            {
-                var primeiraLetra = this.Nome[0].ToString();
-                if (primeiraLetra != primeiraLetra.ToUpper())
-                {
-                    yield return new
-                        ValidationResult("A primeira letra do produto deve ser maiúscula",
-                        new[]
-                        { nameof(this.Nome) }
-                        );
-                }
-            }
+            _repository = repository;
+            _produtoRepository = produtoRepository;
+        }
 
-            if (this.Estoque <= 0)
+        [HttpGet("produtos{id}")]
+
+        public ActionResult<IEnumerable<Produto>> GetProdutosCategoria(int id)
+        {
+            var produtos = _produtoRepository.GetProdutosPorCategoria(id);
+            if (produtos is null)
             {
-                yield return new
-                       ValidationResult("O estoque deve ser maior que zero",
-                       new[]
-                       { nameof(this.Estoque) }
-                       );
+                return NotFound();
             }
+            return Ok
+                (produtos);
+        }
+
+        [HttpGet]
+        public ActionResult<IEnumerable<Produto>> Get()
+        {
+            var produtos =_repository.GetAll();
+
+            if (produtos is null)
+            {
+                return NotFound();
+            }
+            return Ok(produtos);
+            
+        }
+
+        [HttpGet("{id}", Name = "ObterProduto")]
+        public ActionResult<Produto> Get(int id)
+        {
+            var produto =  _repository.Get(c=>c.ProdutoId==id);
+            if (produto is null)
+            {
+                return NotFound("Produto não encontrado...");
+            }
+            return produto;
+        }
+
+        [HttpPost]
+        public ActionResult Post(Produto produto)
+        {
+            if (produto is null)
+                return BadRequest();
+
+           var novoProduto = _repository.Create(produto);
+
+            return new CreatedAtRouteResult("ObterProduto",
+                new { id = novoProduto.ProdutoId }, novoProduto);
+        }
+
+        [HttpPut("{id:int}")]
+        public ActionResult Put(int id, Produto produto)
+        {
+            if (id != produto.ProdutoId)
+            {
+                return BadRequest();
+            }
+            var  produtoAtualizado = _repository.Update(produto);
+            
+            return Ok(produtoAtualizado);
+                       
+        }
+
+        [HttpDelete("{id:int}")]
+        public ActionResult Delete(int id)
+        {
+            var produto = _repository.Get(c=> c.ProdutoId == id);
+
+            if (produto is null)
+            {
+                return NotFound("Produto não encontrado...");
+            }
+            var produtoExcluido =_repository.Delete(produto);
+            return Ok(produtoExcluido);
         }
     }
 }
