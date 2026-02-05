@@ -1,4 +1,5 @@
 ﻿using APICatalogo.Context;
+using APICatalogo.DTOs;
 using APICatalogo.Models;
 using APICatalogo.Repository;
 using APICatalogo.Services;
@@ -12,66 +13,87 @@ namespace APICatalogo.Controllers
     [ApiController]
     public class CategoriasController : ControllerBase
     {
-        private readonly IRepository<Categoria> _repository;
+        private readonly IUnitOfWork _uof;
         private readonly ILogger<CategoriasController> _logger;
 
-        public CategoriasController(IRepository<Categoria> repository, ILogger<CategoriasController> logger)
-        {
-            _repository = repository;
+        public CategoriasController(ILogger<CategoriasController> logger, IUnitOfWork uof)
+        {            
             _logger = logger;
+            _uof=uof;
         }
 
         [HttpGet]
-        public  ActionResult<IEnumerable<Categoria>> Get()
+        public  ActionResult<IEnumerable<CategoriaDTO>> Get()
         {
-            var categoia = _repository.GetAll();
-            return Ok(categoia);
+            var categorias = _uof.CategoriaRepository.GetAll();
+            if(categorias == null) 
+                return NotFound("Não existem categorias ...");
+
+            
+            var categoriasDto = categorias.ToCategoriaDTOList();
+            return Ok(categoriasDto);
         }
 
         [HttpGet("{id:int}", Name = "ObterCategoria")]
-        public ActionResult<Categoria> Get(int id)
+        public ActionResult<CategoriaDTO> Get(int id)
         {
-            var categoria = _repository.Get(c=> c.CategoriaID == id);
+            var categorias = _uof.CategoriaRepository.Get(c=> c.CategoriaID == id);
 
-            if (categoria == null)
+            if (categorias == null)
             {
                 _logger.LogWarning($"Categoria com id= {id} não encontrada...");
                 return NotFound($"Categoria com id= {id} não encontrada...");
             }
-            return Ok(categoria);
+
+            var categoriaDto = categorias.ToCategoriaDTO();
+            return Ok(categoriaDto);
         }
 
         [HttpPost]
-        public ActionResult Post(Categoria categoria)
+        public ActionResult<CategoriaDTO>Post(CategoriaDTO categoriaDto)
         {
-            if (categoria is null)
+            if (categoriaDto is null)
             {
                 _logger.LogWarning($"Dados inválidos...");
                 return BadRequest("Dados inválidos");
             }
-
-            var categoriaCriada = _repository.Create(categoria);
-
-            return new CreatedAtRouteResult("ObterCategoria", new { id = categoriaCriada.CategoriaID }, categoriaCriada);
+           
+            var categoria = categoriaDto.ToCategoria();
+            
+            var categoriaCriada = _uof.CategoriaRepository.Create(categoria);
+            _uof.Commit();
+                       
+             var novacategoriaDto = categoriaCriada.ToCategoriaDTO();
+            return new CreatedAtRouteResult("ObterCategoria", new { id = novacategoriaDto.CategoriaID }, novacategoriaDto);
         }
 
         [HttpPut("{id:int}")]
-        public ActionResult Put(int id, Categoria categoria)
+        public ActionResult<CategoriaDTO>Put(int id, CategoriaDTO categoriaDto)
         {
-            if (id != categoria.CategoriaID)
+            if (id != categoriaDto.CategoriaID)
             {
                 _logger.LogWarning($"Dados inválidos...");
                 return BadRequest("Dados inválidos");
             }
+                       
+            var categoria = categoriaDto.ToCategoria();
 
-            _repository.Update(categoria);
-            return Ok(categoria);
+            var categoriaAtualizada =_uof.CategoriaRepository.Update(categoria);
+            _uof.Commit();
+
+            var categoriaAtualizadaDto = new CategoriaDTO()
+            {
+                CategoriaID = categoria.CategoriaID,
+                Nome = categoria.Nome,
+                ImageUrl = categoria.ImageUrl
+            };
+            return Ok(categoriaAtualizadaDto);
         }
 
         [HttpDelete("{id:int}")]
-        public ActionResult Delete(int id)
+        public ActionResult<CategoriaDTO> Delete(int id)
         {
-            var categoria = _repository.Get(c => c.CategoriaID == id);
+            var categoria = _uof.CategoriaRepository.Get(c => c.CategoriaID == id);
 
             if (categoria == null)
             {
@@ -79,8 +101,12 @@ namespace APICatalogo.Controllers
                 return NotFound($"Categoria com id={id} não encontrada...");
             }
 
-            var categoriaExcluida = _repository.Delete(categoria);
-            return Ok(categoriaExcluida);
+            var categoriaExcluida = _uof.CategoriaRepository.Delete(categoria);
+            _uof.Commit();
+                       
+            var categoriaExcluidaDto = categoriaExcluida.ToCategoriaDTO();
+
+            return Ok(categoriaExcluidaDto);
         }
     }
 }
