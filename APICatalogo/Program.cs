@@ -1,4 +1,5 @@
 using APICatalogo.Context;
+using APICatalogo.DTOs.Mappings;
 using APICatalogo.Filter;
 using APICatalogo.Logging;
 using APICatalogo.Repository;
@@ -40,6 +41,8 @@ builder.Services.AddControllers(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
+
+builder.Services.AddAutoMapper(typeof(PrdutoDTOMappingProfile));
 
 var app = builder.Build();
 
