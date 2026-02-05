@@ -32,7 +32,7 @@ namespace APICatalogo.Repository
 
         public void Commit()
         {
-            throw new NotImplementedException();
+            _context.SaveChanges();
         }
 
         public void Dispose()
