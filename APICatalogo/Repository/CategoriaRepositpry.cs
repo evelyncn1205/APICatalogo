@@ -8,7 +8,6 @@ namespace APICatalogo.Repository
     {
         public CategoriaRepositpry(AppDbContext context) : base(context)
         {
-
         }
 
         public PageList<Categoria> GetCategoria(CategoriaParameters categoriaParameters)
@@ -18,6 +17,19 @@ namespace APICatalogo.Repository
             return categriaOrdenados;
         }
 
-       
+        public PageList<Categoria> GetCategoriasFiltroNome(CategoriaFiltroNome categoriasParams)
+        {
+            var categorias = GetAll().AsQueryable();
+
+            if (!string.IsNullOrEmpty(categoriasParams.Nome))
+            {
+                categorias = categorias.Where(c => c.Nome.Contains(categoriasParams.Nome));
+            }
+
+            var categoriasFiltradas = PageList<Categoria>.ToPageList(categorias,
+                                       categoriasParams.PageNumber, categoriasParams.PageSize);
+
+            return categoriasFiltradas;
+        }
     }
 }
