@@ -4,6 +4,7 @@ using APICatalogo.Models;
 using APICatalogo.Pagination;
 using APICatalogo.Repository;
 using APICatalogo.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -25,13 +26,13 @@ namespace APICatalogo.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public  ActionResult<IEnumerable<CategoriaDTO>> Get()
         {
             var categorias = _uof.CategoriaRepository.GetAll();
             if(categorias == null) 
                 return NotFound("Não existem categorias ...");
-
-            
+                        
             var categoriasDto = categorias.ToCategoriaDTOList();
             return Ok(categoriasDto);
         }
